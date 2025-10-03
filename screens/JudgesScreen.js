@@ -4,16 +4,16 @@ import Logo from '../components/Logo';
 import { palette } from '../theme';
 
 const JUDGES = [
-  { name: 'Oliver Green', role: 'Fashion Design', img: require('../assets/icon.png') },
-  { name: 'Dave Newman', role: 'Interior Architecture', img: require('../assets/icon.png') },
-  { name: 'Chris van Rensburg', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Lorna Lloyd', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Geraldine Fenn', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Joel Graham', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Bheki Ngema', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Lungile Xhwantini', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Tai Wong', role: 'Product Innovation', img: require('../assets/icon.png') },
-  { name: 'Josh Helmich', role: 'Product Innovation', img: require('../assets/icon.png') },
+  { name: 'Oliver Green', img: require('../assets/icon.png') },
+  { name: 'Dave Newman', img: require('../assets/icon.png') },
+  { name: 'Chris van Rensburg', img: require('../assets/icon.png') },
+  { name: 'Lorna Lloyd', img: require('../assets/icon.png') },
+  { name: 'Geraldine Fenn', img: require('../assets/icon.png') },
+  { name: 'Joel Graham', img: require('../assets/icon.png') },
+  { name: 'Bheki Ngema', img: require('../assets/icon.png') },
+  { name: 'Lungile Xhwantini', img: require('../assets/icon.png') },
+  { name: 'Tai Wong', img: require('../assets/icon.png') },
+  { name: 'Josh Helmich', img: require('../assets/icon.png') },
 ];
 
 const numColumns = 2;
@@ -27,7 +27,7 @@ export default function JudgesScreen() {
           <Logo />
           <Text style={styles.title}>Meet the Judges</Text>
           <Text style={styles.intro}>
-            Our esteemed panel of judges brings together experience, creativity, and expertise from diverse fields.
+            Our esteemed panel of judges
           </Text>
         </View>
       }
@@ -39,8 +39,6 @@ export default function JudgesScreen() {
         <View style={[styles.card, { width: w }]}>
           {item.img ? <Image source={item.img} style={styles.img} /> : null}
           <Text style={styles.h2}>{item.name}</Text>
-          <Text style={styles.p}><Text style={{ fontWeight: '700' }}>Expertise: </Text>{item.role}</Text>
-          <Text style={[styles.p, { marginTop: 4 }]}>Short background and inspiration story.</Text>
         </View>
       )}
     />
