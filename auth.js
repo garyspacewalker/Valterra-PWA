@@ -1,5 +1,11 @@
 // auth.js
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
@@ -10,27 +16,28 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 
-// must match "scheme" in app.json and your Verified screen route
-const VERIFY_CONTINUE_URL = "valterra://verified";
+// 👇 HTTPS page on your Firebase Hosting (will redirect into the app)
+const VERIFY_CONTINUE_URL = "https://platafrica-3e52b.web.app/verified";
 
 const AuthContext = createContext({
-  user: null,               // Firebase User | null
-  loading: true,            // true while we check current session
-  emailVerified: false,     // convenience flag
-  signUp: async (email, password) => {},
-  signIn: async (email, password) => {},
+  user: null,
+  loading: true,
+  emailVerified: false,
+  signUp: async (_email, _password) => {},
+  signIn: async (_email, _password) => {},
   signOut: async () => {},
   resendVerification: async () => {},
   refreshUser: async () => {},
+  lastError: null,
 });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState(null);
 
-  // keep Firebase auth in sync with our context
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
@@ -45,20 +52,42 @@ export function AuthProvider({ children }) {
   };
 
   const signUp = async (email, password) => {
-    const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
-    // send verification email with deep link back to app
-    await sendEmailVerification(newUser, { url: VERIFY_CONTINUE_URL });
-    // We keep them signed in but you should gate features until verified
-    await refreshUser();
-    return newUser;
+    setLastError(null);
+    try {
+      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Send verification email to HTTPS page (then that page deep-links to valterra://verified)
+      await sendEmailVerification(newUser, { url: VERIFY_CONTINUE_URL });
+
+      await refreshUser();
+      return { ok: true, message: "Verification email sent. Please check your inbox." };
+    } catch (e) {
+      console.log("signUp error:", e);
+      setLastError(e);
+      return { ok: false, message: e?.message ?? "Sign up failed" };
+    }
   };
 
   const signIn = async (email, password) => {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    // refresh to get the latest emailVerified value
-    await reload(cred.user);
-    setUser({ ...cred.user });
-    return cred.user;
+    setLastError(null);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await reload(cred.user);
+
+      if (!cred.user.emailVerified) {
+        // Re-send and block sign-in until they verify
+        await sendEmailVerification(cred.user, { url: VERIFY_CONTINUE_URL });
+        await fbSignOut(auth);
+        throw new Error("Email not verified. We’ve sent you another verification email.");
+      }
+
+      setUser({ ...cred.user });
+      return { ok: true };
+    } catch (e) {
+      console.log("signIn error:", e);
+      setLastError(e);
+      return { ok: false, message: e?.message ?? "Sign in failed" };
+    }
   };
 
   const signOut = async () => {
@@ -81,8 +110,9 @@ export function AuthProvider({ children }) {
       signOut,
       resendVerification,
       refreshUser,
+      lastError,
     }),
-    [user, loading]
+    [user, loading, lastError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

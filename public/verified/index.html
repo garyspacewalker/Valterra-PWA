@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Verified</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <p>Verification complete. Opening the app…</p>
+    <script>
+      (function () {
+        var target = "valterra://verified";
+        window.location.replace(target);
+        setTimeout(function () {
+          var a = document.createElement("a");
+          a.href = target;
+          a.textContent = "Tap here if the app didn’t open";
+          document.body.appendChild(document.createElement("br"));
+          document.body.appendChild(a);
+        }, 1200);
+      })();
+    </script>
+  </body>
+</html>

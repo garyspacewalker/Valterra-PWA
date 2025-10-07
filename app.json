@@ -12,7 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "scheme": "valterra",              
+    "scheme": "valterra",
     "ios": {
       "supportsTablet": true
     },
