@@ -1,43 +1,60 @@
+// screens/JudgesScreen.js
 import React from 'react';
-import { FlatList, View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { FlatList, View, Text, Image, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Logo from '../components/Logo';
 import { palette } from '../theme';
 
+const PLACEHOLDER = require('../assets/icon.png');
+
+// 👉 Replace each img with your real file when it's in assets/judges/
+// e.g. img: require('../assets/judges/oliver_green.png')
 const JUDGES = [
-  { name: 'Oliver Green', img: require('../assets/icon.png') },
-  { name: 'Dave Newman', img: require('../assets/icon.png') },
-  { name: 'Chris van Rensburg', img: require('../assets/icon.png') },
-  { name: 'Lorna Lloyd', img: require('../assets/icon.png') },
-  { name: 'Geraldine Fenn', img: require('../assets/icon.png') },
-  { name: 'Joel Graham', img: require('../assets/icon.png') },
-  { name: 'Bheki Ngema', img: require('../assets/icon.png') },
-  { name: 'Lungile Xhwantini', img: require('../assets/icon.png') },
-  { name: 'Tai Wong', img: require('../assets/icon.png') },
-  { name: 'Josh Helmich', img: require('../assets/icon.png') },
+  { id: 'oliver-green',        name: 'Oliver Green',        img: require('../assets/judges/oliver-green-5.jpg') },
+  { id: 'dave-newman',         name: 'Dave Newman',         img: require('../assets/judges/dave-newman-6.jpg') },
+  { id: 'chris-van-rensburg',  name: 'Chris van Rensburg',  img: require('../assets/judges/chris-v-r-2.jpg') },
+  { id: 'lorna-lloyd',         name: 'Lorna Lloyd',         img: require('../assets/judges/lorna-lloyd-6.jpg') },
+  { id: 'geraldine-fenn',      name: 'Geraldine Fenn',      img: require('../assets/judges/geraldine-fenn-6.jpg') },
+  { id: 'joel-graham',         name: 'Joel Graham',         img: require('../assets/judges/joel-graham-5.jpg') },
+  { id: 'bheki-ngema',         name: 'Bheki Ngema',         img: require('../assets/judges/bheki-ngema-7.jpg') },
+  { id: 'lungile-xhwantini',   name: 'Lungile Xhwantini',   img: require('../assets/judges/lungilexhwantini-4.jpg') },
+  { id: 'tai-wong',            name: 'Tai Wong',            img: require('../assets/judges/tai-wong-3.jpg') },
+  { id: 'josh-helmich',        name: 'Josh Helmich',        img: require('../assets/judges/josh-helmich-5.jpg') },
 ];
 
 const numColumns = 2;
 const w = (Dimensions.get('window').width - 20 * (numColumns + 1)) / numColumns;
 
 export default function JudgesScreen() {
+  const navigation = useNavigation();
+
   return (
     <FlatList
       ListHeaderComponent={
         <View style={styles.header}>
-          <Logo />
+          <Logo variant="platafrica" />
           <Text style={styles.title}>Meet the Judges</Text>
-          <Text style={styles.intro}>
-            Our esteemed panel of judges
-          </Text>
+          <Text style={styles.intro}>Our esteemed panel of judges</Text>
         </View>
       }
       contentContainerStyle={{ padding: 20, backgroundColor: palette.white }}
       data={JUDGES}
-      keyExtractor={(item, idx) => item.name + idx}
+      keyExtractor={(item) => item.id}
       numColumns={numColumns}
       renderItem={({ item }) => (
         <View style={[styles.card, { width: w }]}>
-          {item.img ? <Image source={item.img} style={styles.img} /> : null}
+          <Pressable
+            onPress={() =>
+              navigation.navigate('JudgeDetail', {
+                id: item.id,
+                name: item.name,
+                // Pass the require/module id or undefined; the detail screen will fallback safely
+                img: item.img,
+              })
+            }
+          >
+            {item.img ? <Image source={item.img} style={styles.img} /> : null}
+          </Pressable>
           <Text style={styles.h2}>{item.name}</Text>
         </View>
       )}

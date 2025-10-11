@@ -19,6 +19,20 @@ import LinksScreen from "./screens/LinksScreen";
 import DesignersScreen from "./screens/DesignersScreen";
 import JudgesScreen from "./screens/JudgesScreen";
 import VerifiedScreen from "./screens/VerifiedScreen.js";
+import JudgeDetailScreen from './screens/JudgeDetailScreen';
+
+
+const JudgesStack = createNativeStackNavigator();
+
+function JudgesStackNavigator() {
+  return (
+    <JudgesStack.Navigator screenOptions={{ headerShown: false }}>
+      <JudgesStack.Screen name="JudgesList" component={JudgesScreen} />
+      <JudgesStack.Screen name="JudgeDetail" component={JudgeDetailScreen} />
+    </JudgesStack.Navigator>
+  );
+}
+
 
 // Theme for navigation
 const navTheme = {
@@ -60,7 +74,7 @@ function Tabs() {
       <Tab.Screen name="Theme" component={ThemeScreen} />
       <Tab.Screen name="Resources" component={LinksScreen} />
       <Tab.Screen name="Designers" component={DesignersScreen} />
-      <Tab.Screen name="Judges" component={JudgesScreen} />
+      <Tab.Screen name="Judges" component={JudgesStackNavigator} />
     </Tab.Navigator>
   );
 }

@@ -28,7 +28,7 @@ export default function ThemeScreen() {
       <View style={styles.container}>
         {/* Logo */}
         <View style={styles.card}>
-          <Logo />
+          <Logo variant="platafrica" />
         </View>
 
         {/* HERO */}

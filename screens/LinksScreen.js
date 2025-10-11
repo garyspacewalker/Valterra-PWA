@@ -14,7 +14,7 @@ export default function LinksScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.card}>
-        <Logo />
+        <Logo variant="platafrica" />
         <Text style={styles.h1}>Useful Resources</Text>
 
         <View style={styles.grid}>
