@@ -1,5 +1,5 @@
 // screens/WelcomeScreen.js
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   View,
@@ -16,22 +16,77 @@ import Logo from '../components/Logo';
 import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
 
-// EDIT these with your venue + links
+// ▶ Paste your link (iframe src) here. If you accidentally paste the whole <iframe>,
+// this file will extract the src automatically.
 const VENUE = {
   name: 'Four Seasons Hotel The Westcliff',
   address: '67 Jan Smuts Ave, Westcliff, Johannesburg, South Africa',
-  // Any Google Maps link (share link) works:
-  mapsUrl: 'https://maps.app.goo.gl/your-short-link',
-  // Street View link using Google Maps Pano:
-  // https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=<lat>,<lng>&heading=180&pitch=0&fov=80
-  streetViewUrl:
-    'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=-26.17483,28.03067&heading=160&pitch=0&fov=80',
+
+  // Opens Google Maps app / browser (short link works)
+  mapsUrl: 'https://maps.app.goo.gl/j7y6u5wafNregwHs9',
+
+  // ✅ Embed URL (Street View or normal map). Use ONLY the iframe src value.
+  // Your Street View example:
+  embedUrl:
+    'https://www.google.com/maps/embed?pb=!4v1760516436162!6m8!1m7!1sN-PJwQI3slbzYBty21iCcA!2m2!1d-26.17109474717924!2d28.03273538852881!3f287.9423220424067!4f0!5f0.7820865974627469',
 };
+
+// If user pasted a full <iframe ...> string, extract the src
+function normalizeEmbedInput(input) {
+  if (!input) return null;
+  const trimmed = String(input).trim();
+  if (trimmed.startsWith('<iframe')) {
+    const m = trimmed.match(/src="([^"]+)"/i);
+    return m ? m[1] : null;
+  }
+  return trimmed;
+}
+
+// Google Maps embed pages require being inside an iframe.
+// We wrap the URL in a minimal HTML document with a full-size iframe.
+function makeIframeHtml(url) {
+  const safe = normalizeEmbedInput(url);
+  if (!safe) return null;
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1, width=device-width, user-scalable=no" />
+    <style>
+      html, body { margin:0; padding:0; height:100%; background:transparent; }
+      .wrap { position:fixed; inset:0; }
+      iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <iframe
+        src="${safe}"
+        allowfullscreen=""
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </div>
+  </body>
+</html>`;
+}
+
+// Try to convert a regular google.com/maps URL to an embeddable one if needed
+function toEmbedUrl(url) {
+  if (!url) return null;
+  if (url.includes('/maps/embed')) return url;
+  if (url.includes('google.com/maps')) {
+    const join = url.includes('?') ? '&' : '?';
+    return `${url}${join}output=embed`;
+  }
+  return null; // maps.app.goo.gl short links typically won't embed directly
+}
 
 export default function WelcomeScreen() {
   const { typeScale, effectiveScheme, accent } = useSettings();
-  const [svModal, setSvModal] = useState(false);
+  const [fsModal, setFsModal] = useState(false);
 
+  // Theme & accent
   const isDark = effectiveScheme === 'dark';
   const brand = accent === 'platafrica' ? palette.platinumNavy : palette.valterraGreen;
   const C = {
@@ -40,8 +95,15 @@ export default function WelcomeScreen() {
     text: isDark ? '#e5e7eb' : palette.platinumNavy,
     muted: isDark ? '#94a3b8' : palette.platinum,
     border: isDark ? '#243244' : '#e5e7eb',
-    chipBg: isDark ? '#1f2937' : '#f3f4f6',
   };
+
+  // Choose the embed URL: prefer explicit embedUrl; otherwise try converting mapsUrl
+  const embedUrl = useMemo(
+    () => normalizeEmbedInput(VENUE.embedUrl) || toEmbedUrl(VENUE.mapsUrl),
+    []
+  );
+
+  const embedHtml = useMemo(() => makeIframeHtml(embedUrl), [embedUrl]);
 
   const openMaps = async () => {
     try {
@@ -225,7 +287,7 @@ export default function WelcomeScreen() {
         </Text>
       </View>
 
-      {/* Card 3 (Venue & Street View) */}
+      {/* Card 3 (Venue & Embedded Map) */}
       <View style={[styles.sectionCard, { backgroundColor: C.card, borderColor: C.border }]}>
         <Text
           style={[
@@ -233,23 +295,27 @@ export default function WelcomeScreen() {
             { fontSize: Math.round(styles.h2.fontSize * typeScale), color: brand },
           ]}
         >
-          Venue & Street View
+          Venue & Map
         </Text>
         <Text style={[styles.p, { color: C.text }]}>{VENUE.name}</Text>
         <Text style={[styles.p, { marginBottom: 10, color: C.text }]}>{VENUE.address}</Text>
 
-        {/* Inline Street View */}
-        {VENUE.streetViewUrl ? (
+        {/* Inline embedded map inside an iframe (required by Google) */}
+        {embedHtml ? (
           <View style={[styles.webWrap, { borderColor: C.border }]}>
             <WebView
-              source={{ uri: VENUE.streetViewUrl }}
+              originWhitelist={['*']}
+              source={{ html: embedHtml }}
+              javaScriptEnabled
+              domStorageEnabled
               startInLoadingState
               style={styles.web}
-              allowsFullscreenVideo
             />
           </View>
         ) : (
-          <Text style={[styles.p, { color: C.text }]}>Paste a Street View URL.</Text>
+          <Text style={[styles.p, { color: C.text }]}>
+            Add a Google Maps <Text style={styles.mono}>/maps/embed?pb=…</Text> URL to <Text style={styles.mono}>VENUE.embedUrl</Text>.
+          </Text>
         )}
 
         <View style={styles.btnRow}>
@@ -263,29 +329,33 @@ export default function WelcomeScreen() {
             <Text style={[styles.mapBtnText, { color: brand }]}>Directions</Text>
           </Pressable>
 
-          <Pressable style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]} onPress={() => setSvModal(true)}>
+          <Pressable style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]} onPress={() => setFsModal(true)}>
             <Ionicons name="expand" size={16} color={brand} />
             <Text style={[styles.mapBtnText, { color: brand }]}>Full screen</Text>
           </Pressable>
         </View>
 
-        <Text style={[styles.smallNote, { color: C.muted }]}>
-          Tip: you can use a Google Maps share link, or the API format with <Text style={styles.mono}>map_action=pano</Text>.
-        </Text>
       </View>
 
-      {/* Full-screen Street View modal */}
-      <Modal visible={svModal} animationType="slide" onRequestClose={() => setSvModal(false)}>
+      {/* Full-screen embedded map modal */}
+      <Modal visible={fsModal} animationType="slide" onRequestClose={() => setFsModal(false)}>
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           <View style={styles.modalTopBar}>
-            <Pressable onPress={() => setSvModal(false)} style={styles.closeBtn}>
+            <Pressable onPress={() => setFsModal(false)} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#fff" />
             </Pressable>
-            <Text style={styles.modalTitle}>Street View</Text>
+            <Text style={styles.modalTitle}>Map</Text>
             <View style={{ width: 40 }} />
           </View>
-          {VENUE.streetViewUrl ? (
-            <WebView source={{ uri: VENUE.streetViewUrl }} startInLoadingState style={{ flex: 1 }} />
+          {embedHtml ? (
+            <WebView
+              originWhitelist={['*']}
+              source={{ html: embedHtml }}
+              javaScriptEnabled
+              domStorageEnabled
+              startInLoadingState
+              style={{ flex: 1 }}
+            />
           ) : null}
         </View>
       </Modal>
@@ -350,7 +420,7 @@ const styles = StyleSheet.create({
   webWrap: { height: 240, borderRadius: 12, overflow: 'hidden', borderWidth: 1, marginBottom: 10 },
   web: { flex: 1 },
 
-  // Map buttons
+  // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 6, flexWrap: 'wrap' },
   mapBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,

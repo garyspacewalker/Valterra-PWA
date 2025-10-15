@@ -11,6 +11,8 @@ import {
   Pressable,
   Modal,
   ScrollView,
+  SafeAreaView,
+  Platform,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
@@ -78,6 +80,7 @@ export default function DesignersScreen() {
   const twoCols = width >= 700;
   const { typeScale, effectiveScheme, accent } = useSettings();
 
+  // Theme / brand
   const isDark = effectiveScheme === 'dark';
   const brand = accent === 'platafrica' ? palette.platinumNavy : palette.valterraGreen;
   const C = {
@@ -182,11 +185,14 @@ export default function DesignersScreen() {
   const renderItem = ({ item }) => {
     const fav = favorites.has(item.entryNo);
     return (
-      <Pressable onPress={() => setPreview(item)} style={[
-        styles.card,
-        twoCols ? styles.cardHalf : styles.cardFull,
-        { backgroundColor: C.card, borderColor: C.border }
-      ]}>
+      <Pressable
+        onPress={() => setPreview(item)}
+        style={[
+          styles.card,
+          twoCols ? styles.cardHalf : styles.cardFull,
+          { backgroundColor: C.card, borderColor: C.border },
+        ]}
+      >
         <Image source={imgSource(item.img)} style={styles.image} />
 
         {/* Category badge */}
@@ -211,6 +217,9 @@ export default function DesignersScreen() {
     );
   };
 
+  // Extra top padding for Android modals (iOS SafeAreaView handles notches)
+  const androidPadTop = Platform.OS === 'android' ? 24 : 0;
+
   return (
     <>
       <FlatList
@@ -220,7 +229,7 @@ export default function DesignersScreen() {
             <Text
               style={[
                 styles.pageTitle,
-                { fontSize: Math.round(styles.pageTitle.fontSize * typeScale), color: C.text }
+                { fontSize: Math.round(styles.pageTitle.fontSize * typeScale), color: C.text },
               ]}
             >
               2025 Entries — Designers
@@ -249,16 +258,22 @@ export default function DesignersScreen() {
               {/* Sort */}
               <View style={[styles.segment, { borderColor: C.border }]}>
                 {['entry', 'name', 'title', 'category'].map(k => (
-                  <Pressable key={k} onPress={() => setSortBy(k)} style={[
-                    styles.segBtn,
-                    { backgroundColor: C.card },
-                    sortBy === k && { backgroundColor: brand + '22' }
-                  ]}>
-                    <Text style={[
-                      styles.segText,
-                      { color: C.text },
-                      sortBy === k && { color: brand, fontWeight: '800' }
-                    ]}>
+                  <Pressable
+                    key={k}
+                    onPress={() => setSortBy(k)}
+                    style={[
+                      styles.segBtn,
+                      { backgroundColor: C.card },
+                      sortBy === k && { backgroundColor: brand + '22' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.segText,
+                        { color: C.text },
+                        sortBy === k && { color: brand, fontWeight: '800' },
+                      ]}
+                    >
                       {k === 'entry' ? '#Entry' : k === 'name' ? 'Name' : k === 'title' ? 'Title' : 'Category'}
                     </Text>
                   </Pressable>
@@ -266,10 +281,13 @@ export default function DesignersScreen() {
               </View>
 
               {/* Favourites */}
-              <Pressable onPress={() => setShowFavesOnly(v => !v)} style={[
-                styles.favesToggle,
-                { backgroundColor: C.chipBg, borderColor: C.border }
-              ]}>
+              <Pressable
+                onPress={() => setShowFavesOnly(v => !v)}
+                style={[
+                  styles.favesToggle,
+                  { backgroundColor: C.chipBg, borderColor: C.border },
+                ]}
+              >
                 <Ionicons name={showFavesOnly ? 'heart' : 'heart-outline'} size={18} color={showFavesOnly ? '#ef4444' : C.text} />
                 <Text style={[styles.favesLabel, { color: C.text }]}>{showFavesOnly ? 'Favourites' : 'All'}</Text>
               </Pressable>
@@ -284,14 +302,16 @@ export default function DesignersScreen() {
                   style={[
                     styles.chip,
                     { backgroundColor: C.chipBg, borderColor: C.border },
-                    categoryFilter === cat && { backgroundColor: brand }
+                    categoryFilter === cat && { backgroundColor: brand },
                   ]}
                 >
-                  <Text style={[
-                    styles.chipText,
-                    { color: C.text },
-                    categoryFilter === cat && { color: '#fff' }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: C.text },
+                      categoryFilter === cat && { color: '#fff' },
+                    ]}
+                  >
                     {cat === 'All' ? 'All Categories' : `${CAT_LABEL[cat]} (${categoryCounts[cat] ?? 0})`}
                   </Text>
                 </Pressable>
@@ -307,21 +327,26 @@ export default function DesignersScreen() {
                   style={[
                     styles.chip,
                     { backgroundColor: C.chipBg, borderColor: C.border },
-                    institutionFilter === inst && { backgroundColor: brand }
+                    institutionFilter === inst && { backgroundColor: brand },
                   ]}
                 >
-                  <Text style={[
-                    styles.chipText,
-                    { color: C.text },
-                    institutionFilter === inst && { color: '#fff' }
-                  ]}>
-                    {inst}{inst !== 'All' ? ` (${institutionIndex.get(inst)?.length ?? 0})` : ''}
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: C.text },
+                      institutionFilter === inst && { color: '#fff' },
+                    ]}
+                  >
+                    {inst}
+                    {inst !== 'All' ? ` (${institutionIndex.get(inst)?.length ?? 0})` : ''}
                   </Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <Text style={[styles.countText, { color: C.muted }]}>{visible.length} result{visible.length === 1 ? '' : 's'}</Text>
+            <Text style={[styles.countText, { color: C.muted }]}>
+              {visible.length} result{visible.length === 1 ? '' : 's'}
+            </Text>
           </View>
         }
         data={visible}
@@ -332,31 +357,51 @@ export default function DesignersScreen() {
         contentContainerStyle={[styles.list, { backgroundColor: C.bg }]}
       />
 
-      {/* Preview modal */}
-      <Modal visible={!!preview} animationType="slide" onRequestClose={() => setPreview(null)}>
-        <View style={[styles.modalWrap, { backgroundColor: C.bg }]}>
+      {/* Preview modal (safe area, with statusBarTranslucent) */}
+      <Modal
+        visible={!!preview}
+        animationType="slide"
+        onRequestClose={() => setPreview(null)}
+        statusBarTranslucent
+      >
+        <SafeAreaView style={[styles.modalWrap, { backgroundColor: C.bg, paddingTop: androidPadTop }]}>
           <View style={[styles.modalHeader, { borderColor: C.border }]}>
             <Text
               style={[
                 styles.modalTitle,
-                { fontSize: Math.round(styles.modalTitle.fontSize * typeScale), color: C.text }
+                { fontSize: Math.round(styles.modalTitle.fontSize * typeScale), color: C.text },
               ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {preview?.title || 'Entry Preview'}
             </Text>
-            <Pressable onPress={() => setPreview(null)} hitSlop={10}>
+            <Pressable onPress={() => setPreview(null)} hitSlop={10} style={[styles.modalCloseBtn, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
               <Ionicons name="close" size={24} color={C.text} />
             </Pressable>
           </View>
+
           <Image source={imgSource(preview?.img)} style={styles.modalImg} />
+
           <View style={{ padding: 16 }}>
-            <Text style={[styles.modalLine, { color: C.text }]}><Text style={[styles.label, { color: C.textSoft }]}>Category: </Text>{preview?.category ? `${preview.category} — ${CAT_LABEL[preview.category]}` : '—'}</Text>
-            <Text style={[styles.modalLine, { color: C.text }]}><Text style={[styles.label, { color: C.textSoft }]}>Entry: </Text>#{preview?.entryNo}</Text>
-            <Text style={[styles.modalLine, { color: C.text }]}><Text style={[styles.label, { color: C.textSoft }]}>Name of Designer(s): </Text>{preview?.name || '—'}</Text>
-            <Text style={[styles.modalLine, { color: C.text }]}><Text style={[styles.label, { color: C.textSoft }]}>Institution/Company: </Text>{preview?.institution || '—'}</Text>
-            <Text style={[styles.modalLine, { color: C.text }]}><Text style={[styles.label, { color: C.textSoft }]}>Type of Jewellery: </Text>{preview?.type || '—'}</Text>
+            <Text style={[styles.modalLine, { color: C.text }]}>
+              <Text style={[styles.label, { color: C.textSoft }]}>Category: </Text>
+              {preview?.category ? `${preview.category} — ${CAT_LABEL[preview.category]}` : '—'}
+            </Text>
+            <Text style={[styles.modalLine, { color: C.text }]}>
+              <Text style={[styles.label, { color: C.textSoft }]}>Entry: </Text>#{preview?.entryNo}
+            </Text>
+            <Text style={[styles.modalLine, { color: C.text }]}>
+              <Text style={[styles.label, { color: C.textSoft }]}>Name of Designer(s): </Text>{preview?.name || '—'}
+            </Text>
+            <Text style={[styles.modalLine, { color: C.text }]}>
+              <Text style={[styles.label, { color: C.textSoft }]}>Institution/Company: </Text>{preview?.institution || '—'}
+            </Text>
+            <Text style={[styles.modalLine, { color: C.text }]}>
+              <Text style={[styles.label, { color: C.textSoft }]}>Type of Jewellery: </Text>{preview?.type || '—'}
+            </Text>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     </>
   );
@@ -442,8 +487,18 @@ const styles = StyleSheet.create({
 
   // Modal
   modalWrap: { flex: 1 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
-  modalTitle: { fontSize: 18, fontWeight: '900' },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  modalTitle: { flex: 1, fontSize: 18, fontWeight: '900', marginRight: 8 },
+  modalCloseBtn: { padding: 6, borderRadius: 8, borderWidth: 1 },
   modalImg: { width: '100%', height: 360, resizeMode: 'cover' },
   modalLine: { marginTop: 6 },
 });
+
+// Android extra top padding for translucent status bar
+const androidPadTop = Platform.OS === 'android' ? 24 : 0;
