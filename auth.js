@@ -13,8 +13,10 @@ import {
   signOut as fbSignOut,
   sendEmailVerification,
   reload,
+  updateProfile, // ⬅️ add this
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
+import { log } from "./firebaseConfig";
 
 // 👇 HTTPS page on your Firebase Hosting (will redirect into the app)
 const VERIFY_CONTINUE_URL = "https://platafrica-3e52b.web.app/verified";
@@ -23,7 +25,8 @@ const AuthContext = createContext({
   user: null,
   loading: true,
   emailVerified: false,
-  signUp: async (_email, _password) => {},
+  // ⬇️ signUp now accepts fullName as the first arg
+  signUp: async (_fullName, _email, _password) => {},
   signIn: async (_email, _password) => {},
   signOut: async () => {},
   resendVerification: async () => {},
@@ -47,20 +50,43 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     if (auth.currentUser) {
       await reload(auth.currentUser);
-      setUser({ ...auth.currentUser }); // trigger re-render with latest flags
+      // trigger re-render with latest flags/profile
+      setUser({ ...auth.currentUser });
     }
   };
 
-  const signUp = async (email, password) => {
+  /**
+   * Create account, set displayName, send verification email.
+   * NOTE: first parameter is fullName now.
+   */
+  const signUp = async (fullName, email, password) => {
     setLastError(null);
     try {
-      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
+      const { user: newUser } = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // ✅ store the user's name on the Auth profile so it appears in the Users table
+      if (fullName && fullName.trim()) {
+        await updateProfile(newUser, { displayName: fullName.trim() });
+      }
 
       // Send verification email to HTTPS page (then that page deep-links to valterra://verified)
       await sendEmailVerification(newUser, { url: VERIFY_CONTINUE_URL });
 
+      // 🔹 Analytics: capture sign_up (works on web; no-op on Expo Go)
+      log("sign_up", { method: "password" });
+
+      // Pull the fresh profile (with displayName) into this session
+      await reload(newUser);
       await refreshUser();
-      return { ok: true, message: "Verification email sent. Please check your inbox." };
+
+      return {
+        ok: true,
+        message: "Verification email sent. Please check your inbox.",
+      };
     } catch (e) {
       console.log("signUp error:", e);
       setLastError(e);
@@ -78,10 +104,16 @@ export function AuthProvider({ children }) {
         // Re-send and block sign-in until they verify
         await sendEmailVerification(cred.user, { url: VERIFY_CONTINUE_URL });
         await fbSignOut(auth);
-        throw new Error("Email not verified. We’ve sent you another verification email.");
+        throw new Error(
+          "Email not verified. We’ve sent you another verification email."
+        );
       }
 
       setUser({ ...cred.user });
+
+      // 🔹 Analytics: capture login after success
+      log("login", { method: "password" });
+
       return { ok: true };
     } catch (e) {
       console.log("signIn error:", e);
@@ -93,11 +125,15 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await fbSignOut(auth);
     setUser(null);
+    // 🔹 Analytics: optional logout event
+    log("logout");
   };
 
   const resendVerification = async () => {
     if (!auth.currentUser) return;
     await sendEmailVerification(auth.currentUser, { url: VERIFY_CONTINUE_URL });
+    // 🔹 optional: track resend
+    log("resend_verification");
   };
 
   const value = useMemo(
@@ -105,7 +141,7 @@ export function AuthProvider({ children }) {
       user,
       loading,
       emailVerified: !!user?.emailVerified,
-      signUp,
+      signUp,              // now expects (fullName, email, password)
       signIn,
       signOut,
       resendVerification,

@@ -1,43 +1,48 @@
 // App.js
-import React, { useMemo } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import React, { useMemo, useRef, useEffect } from "react";
+import { View, Text, ActivityIndicator } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import {
   NavigationContainer,
   DarkTheme as NavDarkTheme,
   DefaultTheme as NavLightTheme,
-} from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from '@expo/vector-icons/Ionicons';
+} from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { AuthProvider, useAuth } from './auth';
-import { palette } from './theme';
+import { AuthProvider, useAuth } from "./auth";
+import { palette } from "./theme";
 
 // Screens
-import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
-import WelcomeScreen from './screens/WelcomeScreen';
-import ThemeScreen from './screens/ThemeScreen';
-import LinksScreen from './screens/LinksScreen';
-import DesignersScreen from './screens/DesignersScreen';
-import JudgesScreen from './screens/JudgesScreen';
-import VerifiedScreen from './screens/VerifiedScreen';
-import JudgeDetailScreen from './screens/JudgeDetailScreen';
-import SettingsScreen from './screens/SettingsScreen';
+import LoginScreen from "./screens/LoginScreen";
+import RegisterScreen from "./screens/RegisterScreen";
+import WelcomeScreen from "./screens/WelcomeScreen";
+import ThemeScreen from "./screens/ThemeScreen";
+import LinksScreen from "./screens/LinksScreen";
+import DesignersScreen from "./screens/DesignersScreen";
+import JudgesScreen from "./screens/JudgesScreen";
+import VerifiedScreen from "./screens/VerifiedScreen";
+import JudgeDetailScreen from "./screens/JudgeDetailScreen";
+import SettingsScreen from "./screens/SettingsScreen";
+import AuctionScreen from "./screens/AuctionScreen";
 
-// Settings (theme, large text, accent, etc.)
-import { SettingsProvider, useSettings } from './context/SettingsContext';
-// Offline cache provider
-import { OfflineCacheProvider } from './providers/OfflineCacheProvider';
+// Settings & providers
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
+import { OfflineCacheProvider } from "./providers/OfflineCacheProvider";
 
-// Helper: brand color by accent
+// 🔹 Analytics helper
+import { logScreen, logEvent } from "./lib/analytics";
+
+// Brand color helper
 function useBrandColor() {
   const { accent } = useSettings();
-  return accent === 'platafrica' ? palette.platinumNavy : palette.valterraGreen;
+  return accent === "platafrica" ? palette.platinumNavy : palette.valterraGreen;
 }
 
-// --- Judges stack (grid -> detail) ---
+/* ─────────────────────────────
+   Judges stack (grid → detail)
+────────────────────────────── */
 const JudgesStack = createNativeStackNavigator();
 function JudgesStackNavigator() {
   return (
@@ -48,16 +53,18 @@ function JudgesStackNavigator() {
   );
 }
 
-// --- Tabs ---
+/* ─────────────────────────────
+   Tabs
+────────────────────────────── */
 const Tab = createBottomTabNavigator();
 function Tabs() {
   const { effectiveScheme } = useSettings();
   const brand = useBrandColor();
-  const isDark = effectiveScheme === 'dark';
+  const isDark = effectiveScheme === "dark";
 
-  const tabInactive = isDark ? '#94a3b8' : palette.platinum;
-  const tabBg = isDark ? '#111827' : '#fff';
-  const tabBorder = isDark ? '#243244' : '#e5e7eb';
+  const tabInactive = isDark ? "#94a3b8" : palette.platinum;
+  const tabBg = isDark ? "#111827" : "#fff";
+  const tabBorder = isDark ? "#243244" : "#e5e7eb";
 
   return (
     <Tab.Navigator
@@ -65,21 +72,21 @@ function Tabs() {
         headerShown: false,
         tabBarActiveTintColor: brand,
         tabBarInactiveTintColor: tabInactive,
-        tabBarStyle: {
-          backgroundColor: tabBg,
-          borderTopColor: tabBorder,
-        },
-        tabBarLabelStyle: { fontWeight: '700' },
+        tabBarStyle: { backgroundColor: tabBg, borderTopColor: tabBorder },
+        tabBarLabelStyle: { fontWeight: "700" },
         tabBarIcon: ({ color, size }) => {
           const map = {
-            Welcome: 'home',
-            Theme: 'color-palette',
-            Resources: 'link',   // keep "Resources" to match your existing screen name
-            Designers: 'people',
-            Judges: 'ribbon',
-            Settings: 'settings',
+            Welcome: "home",
+            Theme: "color-palette",
+            Resources: "link",
+            Designers: "people",
+            Judges: "ribbon",
+            Auction: "hammer",
+            Settings: "settings",
           };
-          return <Ionicons name={map[route.name] || 'ellipse'} size={size} color={color} />;
+          return (
+            <Ionicons name={map[route.name] || "ellipse"} size={size} color={color} />
+          );
         },
       })}
     >
@@ -88,19 +95,22 @@ function Tabs() {
       <Tab.Screen name="Resources" component={LinksScreen} />
       <Tab.Screen name="Designers" component={DesignersScreen} />
       <Tab.Screen name="Judges" component={JudgesStackNavigator} />
+      <Tab.Screen name="Auction" component={AuctionScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
 
-// --- Root stack (Auth gate + app) ---
+/* ─────────────────────────────
+   Root stack (auth gate)
+────────────────────────────── */
 const Stack = createNativeStackNavigator();
 function RootNavigator() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
         <Text style={{ marginTop: 8 }}>Loading session…</Text>
       </View>
@@ -124,13 +134,20 @@ function RootNavigator() {
   );
 }
 
-// --- Navigation container with dynamic light/dark theme + brand primary + deep linking ---
+/* ─────────────────────────────
+   Navigation container (+ Analytics)
+────────────────────────────── */
 function RootApp() {
   const { effectiveScheme } = useSettings();
   const brand = useBrandColor();
+  const routeNameRef = useRef();
 
-  const baseTheme = effectiveScheme === 'dark' ? NavDarkTheme : NavLightTheme;
-  // Override primary with our brand color so links/highlights match accent
+  // optional: log an "app_open" once
+  useEffect(() => {
+    logEvent("app_open");
+  }, []);
+
+  const baseTheme = effectiveScheme === "dark" ? NavDarkTheme : NavLightTheme;
   const navTheme = useMemo(
     () => ({
       ...baseTheme,
@@ -143,35 +160,55 @@ function RootApp() {
   );
 
   const linking = {
-    prefixes: ['valterra://'],
+    prefixes: ["valterra://"],
     config: {
       screens: {
-        Verified: 'verified',
+        Verified: "verified",
         Tabs: {
           screens: {
-            Welcome: 'welcome',
-            Theme: 'theme',
-            Resources: 'resources',
-            Designers: 'designers',
-            Judges: 'judges',
-            Settings: 'settings',
+            Welcome: "welcome",
+            Theme: "theme",
+            Resources: "resources",
+            Designers: "designers",
+            Judges: "judges",
+            Auction: "auction",
+            Settings: "settings",
           },
         },
-        Login: 'login',
-        Register: 'register',
+        Login: "login",
+        Register: "register",
       },
     },
   };
 
   return (
-    <NavigationContainer theme={navTheme} linking={linking}>
-      <StatusBar style={effectiveScheme === 'dark' ? 'light' : 'dark'} />
+    <NavigationContainer
+      theme={navTheme}
+      linking={linking}
+      onReady={(nav) => {
+        const initial = nav.getCurrentRoute()?.name;
+        if (initial) {
+          routeNameRef.current = initial;
+          logScreen(initial);
+        }
+      }}
+      onStateChange={(state) => {
+        const current = state?.routes?.[state.index]?.name;
+        if (current && routeNameRef.current !== current) {
+          logScreen(current);
+          routeNameRef.current = current;
+        }
+      }}
+    >
+      <StatusBar style={effectiveScheme === "dark" ? "light" : "dark"} />
       <RootNavigator />
     </NavigationContainer>
   );
 }
 
-// --- App root: Settings + OfflineCache + Auth ---
+/* ─────────────────────────────
+   App root providers
+────────────────────────────── */
 export default function App() {
   return (
     <SettingsProvider>

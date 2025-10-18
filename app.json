@@ -12,6 +12,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "extra": {
+      "USE_DIRECTUS_IMAGES": true,
+      "DIRECTUS_URL": "https://crm.platafrica.online",
+      "DIRECTUS_TOKEN": "1DKRCgcytoNg1NbDdlCf8rxnOdg6dXT_"
+    },
     "scheme": "valterra",
     "ios": {
       "supportsTablet": true
@@ -21,13 +26,15 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.kto_switch.Valterra"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-web-browser"
     ]
   }
 }
