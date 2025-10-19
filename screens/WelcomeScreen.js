@@ -15,23 +15,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
 import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
+import { getAuth } from "firebase/auth";
+
+
 
 // ▶ Paste your link (iframe src) here. If you accidentally paste the whole <iframe>,
 // this file will extract the src automatically.
 const VENUE = {
   name: 'Four Seasons Hotel The Westcliff',
   address: '67 Jan Smuts Ave, Westcliff, Johannesburg, South Africa',
-
-  // Opens Google Maps app / browser (short link works)
   mapsUrl: 'https://maps.app.goo.gl/j7y6u5wafNregwHs9',
-
-  // ✅ Embed URL (Street View or normal map). Use ONLY the iframe src value.
-  // Your Street View example:
   embedUrl:
     'https://www.google.com/maps/embed?pb=!4v1760516436162!6m8!1m7!1sN-PJwQI3slbzYBty21iCcA!2m2!1d-26.17109474717924!2d28.03273538852881!3f287.9423220424067!4f0!5f0.7820865974627469',
 };
 
-// If user pasted a full <iframe ...> string, extract the src
 function normalizeEmbedInput(input) {
   if (!input) return null;
   const trimmed = String(input).trim();
@@ -42,8 +39,6 @@ function normalizeEmbedInput(input) {
   return trimmed;
 }
 
-// Google Maps embed pages require being inside an iframe.
-// We wrap the URL in a minimal HTML document with a full-size iframe.
 function makeIframeHtml(url) {
   const safe = normalizeEmbedInput(url);
   if (!safe) return null;
@@ -71,7 +66,6 @@ function makeIframeHtml(url) {
 </html>`;
 }
 
-// Try to convert a regular google.com/maps URL to an embeddable one if needed
 function toEmbedUrl(url) {
   if (!url) return null;
   if (url.includes('/maps/embed')) return url;
@@ -79,12 +73,23 @@ function toEmbedUrl(url) {
     const join = url.includes('?') ? '&' : '?';
     return `${url}${join}output=embed`;
   }
-  return null; // maps.app.goo.gl short links typically won't embed directly
+  return null;
 }
 
 export default function WelcomeScreen() {
   const { typeScale, effectiveScheme, accent } = useSettings();
   const [fsModal, setFsModal] = useState(false);
+   const [firstName, setFirstName] = useState("");
+
+  React.useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (user?.displayName) {
+      const first = user.displayName.split(" ")[0];
+      setFirstName(first);
+    }
+  }, []);
 
   // Theme & accent
   const isDark = effectiveScheme === 'dark';
@@ -97,12 +102,10 @@ export default function WelcomeScreen() {
     border: isDark ? '#243244' : '#e5e7eb',
   };
 
-  // Choose the embed URL: prefer explicit embedUrl; otherwise try converting mapsUrl
   const embedUrl = useMemo(
     () => normalizeEmbedInput(VENUE.embedUrl) || toEmbedUrl(VENUE.mapsUrl),
     []
   );
-
   const embedHtml = useMemo(() => makeIframeHtml(embedUrl), [embedUrl]);
 
   const openMaps = async () => {
@@ -121,18 +124,25 @@ export default function WelcomeScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.page, { backgroundColor: C.bg }]}>
+
       {/* Card 1 */}
       <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
         <Logo />
+        <Text style={[styles.title, { color: brand }]}>
+  Welcome {firstName ? firstName : "User"} 
+</Text>
+
         <Text
           style={[
             styles.title,
             { fontSize: Math.round(styles.title.fontSize * typeScale), color: brand },
           ]}
         >
-          Welcome to Valterra Platinum
+         to Valterra Platinum
         </Text>
-        <Text style={[styles.subtitle, { color: C.muted }]}>(Previously known as Anglo American Platinum)</Text>
+        <Text style={[styles.subtitle, { color: C.muted }]}>
+          (Previously known as Anglo American Platinum)
+        </Text>
 
         <View style={styles.section}>
           <Text
@@ -190,7 +200,9 @@ export default function WelcomeScreen() {
           >
             Our Purpose
           </Text>
-          <Text style={[styles.p, styles.quote, { color: C.muted }]}>“Unearthing value to better our world”</Text>
+          <Text style={[styles.p, styles.quote, { color: C.muted }]}>
+            “Unearthing value to better our world”
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -226,6 +238,12 @@ export default function WelcomeScreen() {
 
       {/* Card 2 (PlatAfrica) */}
       <View style={[styles.sectionCard, { backgroundColor: C.card, borderColor: C.border }]}>
+
+        {/* ➤ PlatAfrica logo at the very top of the card */}
+        <View style={styles.plataLogoRow}>
+          <Logo variant="platafrica" />
+        </View>
+
         <Text
           style={[
             styles.h2,
@@ -300,7 +318,6 @@ export default function WelcomeScreen() {
         <Text style={[styles.p, { color: C.text }]}>{VENUE.name}</Text>
         <Text style={[styles.p, { marginBottom: 10, color: C.text }]}>{VENUE.address}</Text>
 
-        {/* Inline embedded map inside an iframe (required by Google) */}
         {embedHtml ? (
           <View style={[styles.webWrap, { borderColor: C.border }]}>
             <WebView
@@ -334,7 +351,6 @@ export default function WelcomeScreen() {
             <Text style={[styles.mapBtnText, { color: brand }]}>Full screen</Text>
           </Pressable>
         </View>
-
       </View>
 
       {/* Full-screen embedded map modal */}
@@ -440,4 +456,20 @@ const styles = StyleSheet.create({
   modalTopBar: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, backgroundColor: '#111' },
   closeBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { color: '#fff', fontWeight: '800' },
+
+  // PlatAfrica additions
+  plataLogoRow: { alignItems: 'center', marginBottom: 10 },
+  plataHero: {
+    height: 160,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+  plataHeroImage: {
+    borderRadius: 12, // ensures iOS respects rounding
+  },
+  plataHeroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.12)', // subtle dark veil for contrast
+  },
 });
