@@ -1,0 +1,9 @@
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+# ✅ Optional: redirect all routes to index.html for React Navigation
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
