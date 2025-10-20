@@ -58,10 +58,10 @@ const ENTRIES = [
   { category: 'S', entryNo: 151, name: 'Kelebogile Seleka', institution: 'Cape Peninsula University of Technology', type: 'Earrings', title: 'Blou-Arch', img: require('../assets/designers/S151-Student-EARRINGS-PBBB0978.jpg') },
   { category: 'S', entryNo: 152, name: 'Njabulo Khuzwayo', institution: 'Cape Peninsula University of Technology', type: 'Earrings', title: 'NovaDrop', img: require('../assets/designers/S152-Student-EARRINGS-PBBB0972.jpg') },
   { category: 'S', entryNo: 153, name: 'Siphe Demeshile', institution: 'Cape Peninsula University of Technology', type: 'Earrings', title: 'Echo Waves', img: require('../assets/designers/S153-Student-EARRINGS-PBBB0940.jpg') },
-  { category: 'S', entryNo: 155, name: 'Wesley Fransman', institution: 'Cape Peninsula University of Technology', type: '', title: 'Spinal  Journey', img: null },
-  { category: 'S', entryNo: 161, name: 'Simone Langeveldt', institution: 'Free Range Jewels', type: '', title: 'The Muitiple Appearance', img: null },
-  { category: 'S', entryNo: 67, name: 'Lwandile Sibiya', institution: 'Durban University of Technology', type: '', title: 'Afro-Deco', img: null },
-  { category: 'S', entryNo: 88, name: 'Sibusisiwe Mtshali', institution: 'Pneuma Jewellers', type: '', title: 'Nomkhubulwana / Goddess of Prosperity in Zulu cosmology', img: null },
+  { category: 'S', entryNo: 155, name: 'Wesley Fransman', institution: 'Cape Peninsula University of Technology', type: 'Pendant', title: 'Spinal  Journey', img: require('../assets/designers/PA25_S155 Eesley Fransman.jpg') },
+  { category: 'S', entryNo: 161, name: 'Simone Langeveldt', institution: 'Free Range Jewels', type: 'Ring', title: 'The Muitiple Appearance', img: require('../assets/designers/PA25_S161 Simone Langeveldt (1).jpg') },
+  { category: 'S', entryNo: 67, name: 'Lwandile Sibiya', institution: 'Durban University of Technology', type: 'Earrings', title: 'Afro-Deco', img: require('../assets/designers/PA25_S67 Lwandile Sibiya.jpg') },
+  { category: 'S', entryNo: 88, name: 'Sibusisiwe Mtshali', institution: 'Pneuma Jewellers', type: 'Earrings', title: 'Nomkhubulwana / Goddess of Prosperity in Zulu cosmology', img: require('../assets/designers/PA25_S88 Sibusiswe Mtshali.jpg') },
 ];
 
 function binarySearchEntry(sortedArray, targetNo) {
