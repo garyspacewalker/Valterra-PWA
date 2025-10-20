@@ -9,7 +9,6 @@ const links = [
   { title: 'PlatAfrica Online Store', url: 'https://plat.africa/', desc: 'Shop the finest PlatAfrica has to offer.' },
   { title: 'Valterra Platinum', url: 'https://www.valterraplatinum.com/', desc: 'Discover Valterra Platinum’s official website.' },
   { title: 'PGM Market Development', url: 'https://www.valterraplatinum.com/products-services-and-development/pgm-market-development', desc: 'Learn more about our market development initiatives.' },
-  { title: 'Jeweller Design & Innovation', url: 'https://www.example4.com', desc: 'Showcasing design and innovation at PlatAfrica.' },
 ];
 
 export default function LinksScreen() {

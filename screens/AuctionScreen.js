@@ -96,7 +96,7 @@ export default function AuctionScreen() {
         <TouchableOpacity activeOpacity={0.85} onPress={() => openSource(item.imageUrl)}>
           <RemoteImage
             remoteUri={item.imageUrl}
-            fallbackSource={require("../assets/auction/placeholder.png")}
+            fallbackSource={require("../assets/icon.png")}
             style={styles.image}
           />
         </TouchableOpacity>

@@ -6,6 +6,7 @@ import {
   NavigationContainer,
   DarkTheme as NavDarkTheme,
   DefaultTheme as NavLightTheme,
+  useNavigationContainerRef,   // ✅ add this
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -31,7 +32,7 @@ import AuctionScreen from "./screens/AuctionScreen";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { OfflineCacheProvider } from "./providers/OfflineCacheProvider";
 
-// 🔹 Analytics helper
+// 🔹 Analytics helper (safe no-ops in dev)
 import { logScreen, logEvent } from "./lib/analytics";
 
 // Brand color helper
@@ -84,9 +85,7 @@ function Tabs() {
             Auction: "hammer",
             Settings: "settings",
           };
-          return (
-            <Ionicons name={map[route.name] || "ellipse"} size={size} color={color} />
-          );
+          return <Ionicons name={map[route.name] || "ellipse"} size={size} color={color} />;
         },
       })}
     >
@@ -140,11 +139,14 @@ function RootNavigator() {
 function RootApp() {
   const { effectiveScheme } = useSettings();
   const brand = useBrandColor();
+
+  // ✅ Use a ref to the nav container
+  const navRef = useNavigationContainerRef();
   const routeNameRef = useRef();
 
   // optional: log an "app_open" once
   useEffect(() => {
-    logEvent("app_open");
+    logEvent("app_open", {});
   }, []);
 
   const baseTheme = effectiveScheme === "dark" ? NavDarkTheme : NavLightTheme;
@@ -183,19 +185,20 @@ function RootApp() {
 
   return (
     <NavigationContainer
+      ref={navRef}                // ✅ attach the ref
       theme={navTheme}
       linking={linking}
-      onReady={(nav) => {
-        const initial = nav.getCurrentRoute()?.name;
+      onReady={() => {            // ✅ no params; use the ref
+        const initial = navRef.getCurrentRoute()?.name;
         if (initial) {
           routeNameRef.current = initial;
-          logScreen(initial);
+          logScreen(initial, {});
         }
       }}
-      onStateChange={(state) => {
-        const current = state?.routes?.[state.index]?.name;
+      onStateChange={() => {      // ✅ no params; use the ref
+        const current = navRef.getCurrentRoute()?.name;
         if (current && routeNameRef.current !== current) {
-          logScreen(current);
+          logScreen(current, {});
           routeNameRef.current = current;
         }
       }}
