@@ -10,14 +10,13 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
+// ⬇️ Remove the static WebView import; we’ll lazy-require it on native only
+// import { WebView } from 'react-native-webview';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
 import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
-import { getAuth } from "firebase/auth";
-
-
+import { getAuth } from 'firebase/auth';
 
 // ▶ Paste your link (iframe src) here. If you accidentally paste the whole <iframe>,
 // this file will extract the src automatically.
@@ -79,14 +78,13 @@ function toEmbedUrl(url) {
 export default function WelcomeScreen() {
   const { typeScale, effectiveScheme, accent } = useSettings();
   const [fsModal, setFsModal] = useState(false);
-   const [firstName, setFirstName] = useState("");
+  const [firstName, setFirstName] = useState('');
 
   React.useEffect(() => {
     const auth = getAuth();
     const user = auth.currentUser;
-
     if (user?.displayName) {
-      const first = user.displayName.split(" ")[0];
+      const first = user.displayName.split(' ')[0];
       setFirstName(first);
     }
   }, []);
@@ -102,11 +100,15 @@ export default function WelcomeScreen() {
     border: isDark ? '#243244' : '#e5e7eb',
   };
 
+  // Map embed URLs/HTML
   const embedUrl = useMemo(
     () => normalizeEmbedInput(VENUE.embedUrl) || toEmbedUrl(VENUE.mapsUrl),
     []
   );
   const embedHtml = useMemo(() => makeIframeHtml(embedUrl), [embedUrl]);
+
+  // ⬇️ Lazy-require WebView ONLY on native so it’s never bundled for web.
+  const WebView = Platform.OS === 'web' ? null : require('react-native-webview').WebView;
 
   const openMaps = async () => {
     try {
@@ -124,13 +126,12 @@ export default function WelcomeScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.page, { backgroundColor: C.bg }]}>
-
       {/* Card 1 */}
       <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
         <Logo />
         <Text style={[styles.title, { color: brand }]}>
-  Welcome {firstName ? firstName : "User"} 
-</Text>
+          Welcome {firstName ? firstName : 'User'}
+        </Text>
 
         <Text
           style={[
@@ -138,7 +139,7 @@ export default function WelcomeScreen() {
             { fontSize: Math.round(styles.title.fontSize * typeScale), color: brand },
           ]}
         >
-         to Valterra Platinum
+          to Valterra Platinum
         </Text>
         <Text style={[styles.subtitle, { color: C.muted }]}>
           (Previously known as Anglo American Platinum)
@@ -158,15 +159,30 @@ export default function WelcomeScreen() {
             essential ingredients in almost every aspect of modern life.
           </Text>
           <View style={styles.grid3}>
-            <View style={[styles.infoCard, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
+            <View
+              style={[
+                styles.infoCard,
+                { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+              ]}
+            >
               <Text style={[styles.infoStrong, { color: C.text }]}>29,000</Text>
               <Text style={{ color: C.text }}>Employees globally</Text>
             </View>
-            <View style={[styles.infoCard, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
+            <View
+              style={[
+                styles.infoCard,
+                { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+              ]}
+            >
               <Text style={[styles.infoStrong, { color: C.text }]}>$14.6 bn</Text>
               <Text style={{ color: C.text }}>Free cash flow 2024</Text>
             </View>
-            <View style={[styles.infoCard, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
+            <View
+              style={[
+                styles.infoCard,
+                { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+              ]}
+            >
               <Text style={[styles.infoStrong, { color: C.text }]}>$19.8 bn</Text>
               <Text style={{ color: C.text }}>EBITDA 2024</Text>
             </View>
@@ -215,9 +231,15 @@ export default function WelcomeScreen() {
             Our Values
           </Text>
           <View style={styles.valuesRow}>
-            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>Keep it safe</Text>
-            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>Own it</Text>
-            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>Stand Together</Text>
+            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>
+              Keep it safe
+            </Text>
+            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>
+              Own it
+            </Text>
+            <Text style={[styles.valuePill, { color: C.text, borderColor: C.border }]}>
+              Stand Together
+            </Text>
           </View>
         </View>
 
@@ -232,13 +254,14 @@ export default function WelcomeScreen() {
           </Text>
           <Text style={[styles.p, { color: C.text }]}>Headquarters: Rosebank, South Africa</Text>
           <Text style={[styles.p, { color: C.text }]}>Operations & Projects: Southern Africa</Text>
-          <Text style={[styles.p, { color: C.text }]}>Listed on the Johannesburg & London Stock Exchanges</Text>
+          <Text style={[styles.p, { color: C.text }]}>
+            Listed on the Johannesburg & London Stock Exchanges
+          </Text>
         </View>
       </View>
 
       {/* Card 2 (PlatAfrica) */}
       <View style={[styles.sectionCard, { backgroundColor: C.card, borderColor: C.border }]}>
-
         {/* ➤ PlatAfrica logo at the very top of the card */}
         <View style={styles.plataLogoRow}>
           <Logo variant="platafrica" />
@@ -318,21 +341,43 @@ export default function WelcomeScreen() {
         <Text style={[styles.p, { color: C.text }]}>{VENUE.name}</Text>
         <Text style={[styles.p, { marginBottom: 10, color: C.text }]}>{VENUE.address}</Text>
 
-        {embedHtml ? (
-          <View style={[styles.webWrap, { borderColor: C.border }]}>
-            <WebView
-              originWhitelist={['*']}
-              source={{ html: embedHtml }}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              style={styles.web}
-            />
-          </View>
+        {/* ✅ Web/PWA: iframe ; Native: WebView */}
+        {Platform.OS === 'web' ? (
+          embedUrl ? (
+            <View style={[styles.webWrap, { borderColor: C.border }]}>
+              <iframe
+                title="Venue map"
+                src={embedUrl}
+                style={{ width: '100%', height: '100%', border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </View>
+          ) : (
+            <Text style={[styles.p, { color: C.text }]}>
+              Add a Google Maps <Text style={styles.mono}>/maps/embed?pb=…</Text> URL to{' '}
+              <Text style={styles.mono}>VENUE.embedUrl</Text>.
+            </Text>
+          )
         ) : (
-          <Text style={[styles.p, { color: C.text }]}>
-            Add a Google Maps <Text style={styles.mono}>/maps/embed?pb=…</Text> URL to <Text style={styles.mono}>VENUE.embedUrl</Text>.
-          </Text>
+          <View style={[styles.webWrap, { borderColor: C.border }]}>
+            {embedHtml && WebView ? (
+              <WebView
+                originWhitelist={['*']}
+                source={{ html: embedHtml }}
+                javaScriptEnabled
+                domStorageEnabled
+                startInLoadingState
+                style={styles.web}
+              />
+            ) : (
+              <Text style={[styles.p, { color: C.text }]}>
+                Add a Google Maps <Text style={styles.mono}>/maps/embed?pb=…</Text> URL to{' '}
+                <Text style={styles.mono}>VENUE.embedUrl</Text>.
+              </Text>
+            )}
+          </View>
         )}
 
         <View style={styles.btnRow}>
@@ -341,12 +386,18 @@ export default function WelcomeScreen() {
             <Text style={styles.mapBtnText}>Open in Google Maps</Text>
           </Pressable>
 
-          <Pressable style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]} onPress={openDirections}>
+          <Pressable
+            style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]}
+            onPress={openDirections}
+          >
             <Ionicons name="navigate" size={16} color={brand} />
             <Text style={[styles.mapBtnText, { color: brand }]}>Directions</Text>
           </Pressable>
 
-          <Pressable style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]} onPress={() => setFsModal(true)}>
+          <Pressable
+            style={[styles.mapBtn, styles.secondaryBtn, { borderColor: brand }]}
+            onPress={() => setFsModal(true)}
+          >
             <Ionicons name="expand" size={16} color={brand} />
             <Text style={[styles.mapBtnText, { color: brand }]}>Full screen</Text>
           </Pressable>
@@ -363,16 +414,31 @@ export default function WelcomeScreen() {
             <Text style={styles.modalTitle}>Map</Text>
             <View style={{ width: 40 }} />
           </View>
-          {embedHtml ? (
-            <WebView
-              originWhitelist={['*']}
-              source={{ html: embedHtml }}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              style={{ flex: 1 }}
-            />
-          ) : null}
+
+          {Platform.OS === 'web' ? (
+            embedUrl ? (
+              <iframe
+                title="Venue map (full)"
+                src={embedUrl}
+                style={{ width: '100%', height: '100%', border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            ) : null
+          ) : (
+            embedHtml &&
+            WebView && (
+              <WebView
+                originWhitelist={['*']}
+                source={{ html: embedHtml }}
+                javaScriptEnabled
+                domStorageEnabled
+                startInLoadingState
+                style={{ flex: 1 }}
+              />
+            )
+          )}
         </View>
       </Modal>
     </ScrollView>
@@ -432,15 +498,18 @@ const styles = StyleSheet.create({
   list: { marginTop: 6, marginLeft: 2 },
   li: { lineHeight: 22, marginBottom: 2, fontWeight: '700' },
 
-  // WebView
+  // Map area
   webWrap: { height: 240, borderRadius: 12, overflow: 'hidden', borderWidth: 1, marginBottom: 10 },
   web: { flex: 1 },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 6, flexWrap: 'wrap' },
   mapBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 10, paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 10,
   },
   secondaryBtn: {
@@ -450,10 +519,19 @@ const styles = StyleSheet.create({
   mapBtnText: { color: '#fff', fontWeight: '800' },
 
   smallNote: { marginTop: 8, fontSize: 12 },
-  mono: { fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) },
+  mono: {
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+  },
 
   // Modal
-  modalTopBar: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, backgroundColor: '#111' },
+  modalTopBar: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    backgroundColor: '#111',
+  },
   closeBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { color: '#fff', fontWeight: '800' },
 
@@ -466,10 +544,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   plataHeroImage: {
-    borderRadius: 12, // ensures iOS respects rounding
+    borderRadius: 12,
   },
   plataHeroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.12)', // subtle dark veil for contrast
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
 });

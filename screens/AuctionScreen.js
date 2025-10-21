@@ -4,6 +4,7 @@ import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 
+import Logo from "../components/Logo";
 import { palette } from "../theme";
 import { useSettings } from "../context/SettingsContext";
 import RemoteImage from "../components/RemoteImage";
@@ -12,19 +13,7 @@ import { fetchAuctionItems } from "../lib/directus";
 /* ──────────────────────────────────────────────────────────────
    Helpers
 ─────────────────────────────────────────────────────────────── */
-const fmtZAR = (n) => {
-  if (n == null || isNaN(Number(n))) return "";
-  try {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-      maximumFractionDigits: 0,
-    }).format(Number(n));
-  } catch {
-    return `R ${Number(n).toFixed(0)}`;
-  }
-};
-
+const LIVE_URL = "https://app.platafrica.online/";
 const norm = (v) => (v == null ? "" : String(v).trim().toLowerCase());
 
 function useThemeColors() {
@@ -43,7 +32,7 @@ function useThemeColors() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   Screen (Search-only)
+   Screen (Search-only, fully scrollable header like other screens)
 ─────────────────────────────────────────────────────────────── */
 export default function AuctionScreen() {
   const C = useThemeColors();
@@ -88,11 +77,11 @@ export default function AuctionScreen() {
     });
   }, [items, query]);
 
-  const openSource = async (url) => url && (await WebBrowser.openBrowserAsync(url));
+  const openUrl = async (url) => url && (await WebBrowser.openBrowserAsync(url));
 
   const renderCard = ({ item }) => (
     <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
-      <TouchableOpacity activeOpacity={0.85} onPress={() => openSource(item.imageUrl)}>
+      <TouchableOpacity activeOpacity={0.85} onPress={() => openUrl(item.imageUrl)}>
         <RemoteImage
           remoteUri={item.imageUrl}
           fallbackSource={require("../assets/icon.png")}
@@ -107,17 +96,20 @@ export default function AuctionScreen() {
         {!!item.company && <Text style={[styles.meta, { color: C.text }]}>Company: {item.company}</Text>}
       </View>
 
-      <Text style={[styles.price, { color: item.price != null ? C.brand : C.muted }]}>
-        {item.price != null ? fmtZAR(item.price) : "Price: —"}
-      </Text>
+      {/* Price removed as requested */}
 
       {!!item.description && <Text style={[styles.desc, { color: C.muted }]}>{item.description}</Text>}
     </View>
   );
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* Search bar + count */}
+  const ListHeader = (
+    <>
+      {/* ── PlatAfrica logo header ── */}
+      <View style={[styles.header, { backgroundColor: C.card, borderColor: C.border }]}>
+        <Logo variant="platafrica" />
+      </View>
+
+      {/* Search bar + count + live-link notice */}
       <View style={[styles.toolbar, { backgroundColor: C.card, borderBottomColor: C.border }]}>
         <TextInput
           value={query}
@@ -131,15 +123,26 @@ export default function AuctionScreen() {
         <Text style={{ color: C.muted }}>
           Showing {filtered.length} item{filtered.length === 1 ? "" : "s"}
         </Text>
+
+        <TouchableOpacity onPress={() => openUrl(LIVE_URL)} activeOpacity={0.7}>
+          <Text style={[styles.linkText, { color: C.brand }]}>
+            Looking to buy? View & bid on the live auction at app.platafrica.online
+          </Text>
+        </TouchableOpacity>
+
+        {!!err && <Text style={[styles.error, { color: "crimson" }]}>{err}</Text>}
       </View>
+    </>
+  );
 
-      {!!err && <Text style={[styles.error, { color: "crimson" }]}>{err}</Text>}
-
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <FlatList
         data={filtered}
         keyExtractor={(x) => String(x.id)}
-        contentContainerStyle={{ padding: 16, backgroundColor: C.bg }}
         renderItem={renderCard}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={{ padding: 16, paddingTop: 0, backgroundColor: C.bg }}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           !err ? (
@@ -157,14 +160,30 @@ export default function AuctionScreen() {
    Styles
 ─────────────────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  error: { padding: 12 },
-  toolbar: { padding: 16, gap: 8, borderBottomWidth: 1 },
+  error: { paddingTop: 4 },
+
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderRadius: 14,
+    margin: 16,
+    marginBottom: 0,
+    borderWidth: 1,
+  },
+
+  toolbar: { padding: 16, gap: 8, borderBottomWidth: 1, marginHorizontal: 16, marginBottom: 12, borderRadius: 12 },
   search: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+  },
+  linkText: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "800",
+    textDecorationLine: "underline",
   },
 
   card: {
@@ -181,6 +200,7 @@ const styles = StyleSheet.create({
   title: { marginTop: 8, fontWeight: "800", fontSize: 16 },
   rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   meta: { fontSize: 13 },
+  // price style kept (unused) in case you re-enable it later:
   price: { marginTop: 6, fontWeight: "900", fontSize: 16 },
   desc: { marginTop: 8, lineHeight: 20, fontSize: 13 },
 });

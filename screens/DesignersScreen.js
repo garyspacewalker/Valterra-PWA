@@ -106,6 +106,7 @@ export default function DesignersScreen() {
   }, []);
   const institutions = useMemo(() => [...institutionIndex.keys()], [institutionIndex]);
 
+  // counts per original category
   const categoryCounts = useMemo(() => {
     const c = { P: 0, S: 0, A: 0 };
     for (const e of ENTRIES) if (c[e.category] !== undefined) c[e.category]++;
@@ -114,7 +115,7 @@ export default function DesignersScreen() {
 
   // ----- UI state -----
   const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('All'); // 'All' | 'P' | 'S/A'
   const [institutionFilter, setInstitutionFilter] = useState('All');
   const [sortBy, setSortBy] = useState('entry');
   const [favorites, setFavorites] = useState(new Set());
@@ -128,6 +129,13 @@ export default function DesignersScreen() {
       return next;
     });
   }, []);
+
+  // Build category chips with merged Student/Apprentice
+  const CATEGORY_CHIPS = useMemo(() => ([
+    { key: 'All', label: 'All Categories' },
+    { key: 'P',   label: `Professional (${categoryCounts.P})` },
+    { key: 'S/A', label: `Student/Apprentice (${(categoryCounts.S || 0) + (categoryCounts.A || 0)})` },
+  ]), [categoryCounts]);
 
   // ----- Filter + Search + Sort pipeline -----
   const visible = useMemo(() => {
@@ -154,7 +162,12 @@ export default function DesignersScreen() {
       }
     }
 
-    if (categoryFilter !== 'All') list = list.filter(e => e.category === categoryFilter);
+    // Category filter (merge S + A when "S/A" selected)
+    if (categoryFilter === 'P') {
+      list = list.filter(e => e.category === 'P');
+    } else if (categoryFilter === 'S/A') {
+      list = list.filter(e => e.category === 'S' || e.category === 'A');
+    }
 
     if (institutionFilter !== 'All') {
       const pool = institutionIndex.get(institutionFilter) || [];
@@ -293,26 +306,26 @@ export default function DesignersScreen() {
               </Pressable>
             </View>
 
-            {/* Category chips */}
+            {/* Category chips (with merged Student/Apprentice) */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-              {['All', ...CAT_ORDER].map(cat => (
+              {CATEGORY_CHIPS.map(({ key, label }) => (
                 <Pressable
-                  key={cat}
-                  onPress={() => setCategoryFilter(cat)}
+                  key={key}
+                  onPress={() => setCategoryFilter(key)}
                   style={[
                     styles.chip,
                     { backgroundColor: C.chipBg, borderColor: C.border },
-                    categoryFilter === cat && { backgroundColor: brand },
+                    categoryFilter === key && { backgroundColor: brand },
                   ]}
                 >
                   <Text
                     style={[
                       styles.chipText,
                       { color: C.text },
-                      categoryFilter === cat && { color: '#fff' },
+                      categoryFilter === key && { color: '#fff' },
                     ]}
                   >
-                    {cat === 'All' ? 'All Categories' : `${CAT_LABEL[cat]} (${categoryCounts[cat] ?? 0})`}
+                    {label}
                   </Text>
                 </Pressable>
               ))}
@@ -499,6 +512,3 @@ const styles = StyleSheet.create({
   modalImg: { width: '100%', height: 360, resizeMode: 'cover' },
   modalLine: { marginTop: 6 },
 });
-
-// Android extra top padding for translucent status bar
-const androidPadTop = Platform.OS === 'android' ? 24 : 0;

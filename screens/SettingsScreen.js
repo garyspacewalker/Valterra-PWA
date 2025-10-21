@@ -2,7 +2,6 @@
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet, Switch, Pressable, Alert } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
-import { useOfflineCache } from '../providers/OfflineCacheProvider';
 import { palette } from '../theme';
 import { auth } from "../firebaseConfig";
 import { signOut, deleteUser } from "firebase/auth";
@@ -17,8 +16,6 @@ export default function SettingsScreen() {
     effectiveScheme,
     typeScale,
   } = useSettings();
-
-  const { warmCache, clearing, caching } = useOfflineCache();
 
   const isDark = effectiveScheme === 'dark';
   const brand = accent === 'platafrica' ? palette.platinumNavy : palette.valterraGreen;
@@ -180,21 +177,6 @@ export default function SettingsScreen() {
           <View style={{ flex: 1 }} />
           <Switch value={reduceMotion} onValueChange={setReduceMotion} />
         </View>
-      </View>
-
-      {/* Offline Cache */}
-      <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
-        <H1>Offline</H1>
-        <Text style={[styles.p, { color: C.text }]}>
-          Pre-cache images and data so the app works smoothly without a network.
-        </Text>
-        <Pressable
-          style={[styles.btn, { backgroundColor: brand }]}
-          onPress={warmCache}
-          disabled={caching || clearing}
-        >
-          <Text style={styles.btnText}>{caching ? 'Caching…' : 'Cache for offline use'}</Text>
-        </Pressable>
       </View>
 
       {/* Account Management */}

@@ -1,19 +1,11 @@
 // screens/RegisterScreen.js
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 } from "react-native";
 import Logo from "../components/Logo";
 import { palette } from "../theme";
 import { useAuth } from "../auth";
-import { auth } from "../firebaseConfig";
-import { updateProfile } from "firebase/auth";
 
 export default function RegisterScreen({ navigation }) {
   const [fullname, setFullname] = useState("");
@@ -24,34 +16,35 @@ export default function RegisterScreen({ navigation }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Pull signUp (sends verification email) and signOut (so we return to auth stack)
-  const { signUp, signOut } = useAuth();
+  const { signUp, signOut } = useAuth(); // signUp(fullName, email, password)
 
   const submit = async () => {
-    if (!fullname.trim() || !email.trim() || !pwd.trim() || !confirm.trim()) {
+    const name = fullname.trim();
+    const mail = email.trim().toLowerCase();
+    const pass = pwd;
+
+    if (!name || !mail || !pass || !confirm.trim()) {
       Alert.alert("Validation", "Please fill all fields.");
       return;
     }
-    if (pwd !== confirm) {
+    if (pass !== confirm) {
       Alert.alert("Validation", "Passwords do not match.");
+      return;
+    }
+    if (pass.length < 6) {
+      Alert.alert("Validation", "Password must be at least 6 characters.");
       return;
     }
 
     try {
       setSubmitting(true);
 
-      // Create the account + send verification email (handled inside signUp)
-      const res = await signUp(email.trim(), pwd);
-
-      // Optional: set displayName on the Firebase user (while they are still signed in)
-      if (auth.currentUser && fullname.trim()) {
-        await updateProfile(auth.currentUser, { displayName: fullname.trim() });
-      }
+      // ✅ pass (fullName, email, password)
+      const res = await signUp(name, mail, pass);
 
       if (res?.ok) {
-        // ✅ Option A: immediately sign out so the stack shows Login/Register
+        // Return to the auth stack and prompt them to verify
         await signOut();
-
         Alert.alert(
           "Verify your email",
           "We’ve sent a verification link to your inbox. Please verify, then log in.",
@@ -106,7 +99,7 @@ export default function RegisterScreen({ navigation }) {
               style={[styles.input, { paddingRight: 44 }]}
             />
             <TouchableOpacity
-              onPress={() => setShowPwd((v) => !v)}
+              onPress={() => setShowPwd(v => !v)}
               style={styles.eyeBtn}
               accessibilityLabel="Toggle password visibility"
             >
@@ -128,7 +121,7 @@ export default function RegisterScreen({ navigation }) {
               style={[styles.input, { paddingRight: 44 }]}
             />
             <TouchableOpacity
-              onPress={() => setShowConfirm((v) => !v)}
+              onPress={() => setShowConfirm(v => !v)}
               style={styles.eyeBtn}
               accessibilityLabel="Toggle confirm password visibility"
             >
@@ -149,10 +142,7 @@ export default function RegisterScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => navigation.replace("Login")}
-          style={{ marginTop: 14 }}
-        >
+        <TouchableOpacity onPress={() => navigation.replace("Login")} style={{ marginTop: 14 }}>
           <Text style={{ color: palette.valterraGreen, textAlign: "center" }}>
             Already have an account? Login here
           </Text>
@@ -170,50 +160,26 @@ const styles = StyleSheet.create({
     backgroundColor: palette.white,
   },
   card: {
-    width: "100%",
-    maxWidth: 900,
-    alignSelf: "center",
-    backgroundColor: "#fff",
-    padding: 24,
-    borderRadius: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    width: "100%", maxWidth: 900, alignSelf: "center",
+    backgroundColor: "#fff", padding: 24, borderRadius: 14,
+    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 2,
   },
   h1: {
-    fontSize: 28,
-    color: palette.valterraGreen,
-    fontWeight: "700",
-    marginBottom: 12,
-    textAlign: "center",
+    fontSize: 28, color: palette.valterraGreen, fontWeight: "700",
+    marginBottom: 12, textAlign: "center",
   },
   field: { marginBottom: 12 },
   label: { fontSize: 14, color: palette.platinum, marginBottom: 6 },
   input: {
-    borderWidth: 1,
-    borderColor: palette.platinum,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
+    borderWidth: 1, borderColor: palette.platinum, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, backgroundColor: "#fff",
   },
   passwordWrap: { position: "relative", justifyContent: "center" },
-  eyeBtn: {
-    position: "absolute",
-    right: 10,
-    height: "100%",
-    justifyContent: "center",
-  },
+  eyeBtn: { position: "absolute", right: 10, height: "100%", justifyContent: "center" },
   btn: {
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: "transparent",
+    paddingVertical: 12, borderRadius: 10, alignItems: "center",
+    marginTop: 6, borderWidth: 1, borderColor: "transparent",
   },
   btnPrimary: { backgroundColor: palette.valterraGreen },
   btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
