@@ -1,12 +1,26 @@
-// screens/JudgesScreen.js
 import React from 'react';
-import { FlatList, View, Text, Image, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { FlatList, View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { Asset } from 'expo-asset';
 import { useNavigation } from '@react-navigation/native';
 import Logo from '../components/Logo';
 import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
 
 const PLACEHOLDER = require('../assets/icon.png');
+const PLACEHOLDER_URI = Asset.fromModule(PLACEHOLDER).uri;
+
+// Robust resolver for local require(...) and remote URLs
+const resolveImg = (imgLike) => {
+  try {
+    if (!imgLike) return PLACEHOLDER_URI;
+    if (typeof imgLike === 'number') return Asset.fromModule(imgLike).uri; // local require
+    if (typeof imgLike === 'string') return imgLike;                        // remote URL
+    if (imgLike?.uri) return imgLike.uri;
+    if (imgLike?.default) return imgLike.default;                           // ESM default export
+  } catch {}
+  return PLACEHOLDER_URI;
+};
 
 const JUDGES = [
   { id: 'oliver-green',        name: 'Oliver Green',        img: require('../assets/judges/oliver-green-5.jpg') },
@@ -43,12 +57,7 @@ export default function JudgesScreen() {
       ListHeaderComponent={
         <View style={[styles.header, { backgroundColor: C.card, borderColor: C.border }]}>
           <Logo variant="platafrica" />
-          <Text
-            style={[
-              styles.title,
-              { fontSize: Math.round(styles.title.fontSize * typeScale), color: C.text }
-            ]}
-          >
+          <Text style={[styles.title, { fontSize: Math.round(styles.title.fontSize * typeScale), color: C.text }]}>
             Meet the Judges
           </Text>
           <Text style={[styles.intro, { color: C.muted }]}>Our esteemed panel of judges</Text>
@@ -61,22 +70,16 @@ export default function JudgesScreen() {
       renderItem={({ item }) => (
         <View style={[styles.card, { width: w, backgroundColor: C.card, borderColor: C.border }]}>
           <Pressable
-            onPress={() =>
-              navigation.navigate('JudgeDetail', {
-                id: item.id,
-                name: item.name,
-                // no img param; we’ll resolve from id in the detail screen
-              })
-            }
+            onPress={() => navigation.navigate('JudgeDetail', { id: item.id, name: item.name })}
           >
-            {item.img ? <Image source={item.img} style={[styles.img, { borderColor: brand }]} /> : <Image source={PLACEHOLDER} style={[styles.img, { borderColor: brand }]} />}
+            <ExpoImage
+              source={resolveImg(item.img)}
+              style={[styles.img, { borderColor: brand }]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
           </Pressable>
-          <Text
-            style={[
-              styles.h2,
-              { fontSize: Math.round(styles.h2.fontSize * typeScale), color: brand }
-            ]}
-          >
+          <Text style={[styles.h2, { fontSize: Math.round(styles.h2.fontSize * typeScale), color: brand }]}>
             {item.name}
           </Text>
         </View>
@@ -98,9 +101,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 1,
     borderWidth: 1,
   },
-  img: {
-    width: 150, height: 150, borderRadius: 75, marginBottom: 12, borderWidth: 4, resizeMode: 'cover',
-  },
+  img: { width: 150, height: 150, borderRadius: 75, marginBottom: 12, borderWidth: 4 },
   h2: { fontSize: 18, fontWeight: '800', marginBottom: 4, textAlign: 'center' },
-  p: { fontSize: 14, textAlign: 'center' },
 });

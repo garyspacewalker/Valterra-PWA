@@ -1,7 +1,7 @@
-// screens/JudgeDetailScreen.js
-import React, { useMemo } from 'react';
-import { ScrollView, View, Text, Image, StyleSheet, Pressable } from 'react-native';
-import { Image as RNImage } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { Asset } from 'expo-asset';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
@@ -9,8 +9,9 @@ import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
 
 const PLACEHOLDER = require('../assets/icon.png');
+const PLACEHOLDER_URI = Asset.fromModule(PLACEHOLDER).uri;
 
-// Map id -> local asset (so we don't need to pass the image via params)
+// id -> local asset; explicit requires ensure the files are bundled
 const JUDGE_IMAGES = {
   'oliver-green':       require('../assets/judges/oliver-green-5.jpg'),
   'dave-newman':        require('../assets/judges/dave-newman-6.jpg'),
@@ -24,6 +25,7 @@ const JUDGE_IMAGES = {
   'josh-helmich':       require('../assets/judges/josh-helmich-5.jpg'),
 };
 
+// SAME BIO_MAP as your current file
 const BIO_MAP = {
   'oliver-green': [
     "From a young age, Oliver Green enjoyed creating and making things in his father’s workshop fueling his passion for designing and working with his hands.",
@@ -114,30 +116,28 @@ const BIO_MAP = {
 
 function toParagraphs(bioEntry) {
   if (Array.isArray(bioEntry)) return bioEntry.map(p => (p || '').trim()).filter(Boolean);
-  if (typeof bioEntry === 'string') {
-    return bioEntry.split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean);
-  }
+  if (typeof bioEntry === 'string') return bioEntry.split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean);
   return [];
 }
 
-// Cross-platform image normalizer (works for require(), uri string, ESM default)
-function imgSource(imgLike) {
-  if (!imgLike) return PLACEHOLDER;
+// unified resolver
+const resolveImg = (imgLike) => {
   try {
-    const resolved = RNImage.resolveAssetSource(imgLike);
-    if (resolved?.uri) return resolved;      // { uri, width?, height? }
+    if (!imgLike) return PLACEHOLDER_URI;
+    if (typeof imgLike === 'number') return Asset.fromModule(imgLike).uri;
+    if (typeof imgLike === 'string') return imgLike;
+    if (imgLike?.uri) return imgLike.uri;
+    if (imgLike?.default) return imgLike.default;
   } catch {}
-  if (typeof imgLike === 'string') return { uri: imgLike };
-  if (typeof imgLike === 'number') return imgLike;
-  if (typeof imgLike === 'object' && imgLike?.default) return { uri: imgLike.default };
-  return PLACEHOLDER;
-}
+  return PLACEHOLDER_URI;
+};
 
 export default function JudgeDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { typeScale, effectiveScheme, accent } = useSettings();
-  const { id, name, img } = route.params || {};
+  const { id, name } = route.params || {};
+  const [broken, setBroken] = useState(false);
 
   const brand = accent === 'platafrica' ? palette.platinumNavy : palette.valterraGreen;
   const isDark = effectiveScheme === 'dark';
@@ -149,8 +149,11 @@ export default function JudgeDetailScreen() {
     border: isDark ? '#243244' : '#e5e7eb',
   };
 
-  // Prefer param image if present, else lookup by id; then normalize
-  const heroSource = useMemo(() => imgSource(img ?? JUDGE_IMAGES[id] ?? PLACEHOLDER), [img, id]);
+  // Look up by id only (don’t rely on navigation passing an image object)
+  const heroSrc = useMemo(() => {
+    if (broken) return PLACEHOLDER_URI;
+    return resolveImg(JUDGE_IMAGES[id]);
+  }, [id, broken]);
 
   const paragraphs = useMemo(() => toParagraphs(BIO_MAP[id]), [id]);
 
@@ -162,28 +165,25 @@ export default function JudgeDetailScreen() {
 
       <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
         <View style={styles.topRow}>
-          <Text
-            style={[
-              styles.name,
-              { fontSize: Math.round(styles.name.fontSize * typeScale), color: C.text }
-            ]}
-          >
+          <Text style={[styles.name, { fontSize: Math.round(styles.name.fontSize * typeScale), color: C.text }]}>
             {name || 'Judge'}
           </Text>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={[styles.closeBtn, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={10}
+            style={[styles.closeBtn, { borderColor: C.border, backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
             <Ionicons name="close" size={24} color={C.text} />
           </Pressable>
         </View>
 
-        <Image source={heroSource} style={styles.hero} />
+        <ExpoImage
+          source={heroSrc}
+          style={styles.hero}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          onError={() => setBroken(true)}
+        />
 
         <View style={styles.section}>
-          <Text
-            style={[
-              styles.h2,
-              { fontSize: Math.round(styles.h2.fontSize * typeScale), color: brand }
-            ]}
-          >
+          <Text style={[styles.h2, { fontSize: Math.round(styles.h2.fontSize * typeScale), color: brand }]}>
             Biography
           </Text>
           {paragraphs.length > 0 ? (
@@ -217,8 +217,7 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 6, borderRadius: 8, borderWidth: 1 },
 
   name: { fontSize: 22, fontWeight: '900' },
-  hero: { width: '100%', height: 320, borderRadius: 12, marginTop: 12, resizeMode: 'cover' },
-
+  hero: { width: '100%', height: 320, borderRadius: 12, marginTop: 12 },
   section: { marginTop: 16 },
   h2: { fontSize: 18, fontWeight: '800' },
   p: { lineHeight: 22 },
