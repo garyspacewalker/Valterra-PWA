@@ -4,7 +4,6 @@ import {
   FlatList,
   View,
   Text,
-  Image,
   StyleSheet,
   useWindowDimensions,
   TextInput,
@@ -14,6 +13,8 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { Asset } from 'expo-asset';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
 import { palette } from '../theme';
@@ -21,6 +22,7 @@ import { useSettings } from '../context/SettingsContext';
 
 // Fallback image if an entry image is missing
 const PLACEHOLDER = require('../assets/icon.png');
+const PLACEHOLDER_URI = Asset.fromModule(PLACEHOLDER).uri;
 
 // Category labels
 const CAT_LABEL = { P: 'Professional', S: 'Student', A: 'Apprentice' };
@@ -75,6 +77,21 @@ function binarySearchEntry(sortedArray, targetNo) {
   return null;
 }
 
+// Normalize any local require(...) or remote URL into an Expo Image source (string)
+function resolveImg(img) {
+  try {
+    if (!img) return PLACEHOLDER_URI;
+    if (typeof img === 'number') {
+      const a = Asset.fromModule(img);
+      return a?.uri ?? PLACEHOLDER_URI;
+    }
+    if (typeof img === 'string') return img;               // remote URL
+    if (img?.uri) return img.uri;                          // { uri }
+    if (img?.default) return img.default;                  // ESM default export
+  } catch {}
+  return PLACEHOLDER_URI;
+}
+
 export default function DesignersScreen() {
   const { width } = useWindowDimensions();
   const twoCols = width >= 700;
@@ -121,6 +138,7 @@ export default function DesignersScreen() {
   const [favorites, setFavorites] = useState(new Set());
   const [showFavesOnly, setShowFavesOnly] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [broken, setBroken] = useState(new Set()); // track any images that fail to load
 
   const toggleFavorite = useCallback((no) => {
     setFavorites(prev => {
@@ -189,14 +207,13 @@ export default function DesignersScreen() {
     return list;
   }, [query, categoryFilter, institutionFilter, showFavesOnly, sortBy, favorites, institutionIndex, sortedByEntryNo]);
 
-  const imgSource = (img) => {
-    if (typeof img === 'number') return img;
-    if (typeof img === 'string') return { uri: img };
-    return PLACEHOLDER;
-  };
+  // helper to pick the right source string (fallback if marked broken)
+  const getSrc = (img, key) => (broken.has(key) ? PLACEHOLDER_URI : resolveImg(img));
 
   const renderItem = ({ item }) => {
     const fav = favorites.has(item.entryNo);
+    const src = getSrc(item.img, item.entryNo);
+
     return (
       <Pressable
         onPress={() => setPreview(item)}
@@ -206,7 +223,19 @@ export default function DesignersScreen() {
           { backgroundColor: C.card, borderColor: C.border },
         ]}
       >
-        <Image source={imgSource(item.img)} style={styles.image} />
+        <ExpoImage
+          source={src}
+          style={styles.image}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          onError={() =>
+            setBroken(prev => {
+              const next = new Set(prev);
+              next.add(item.entryNo);
+              return next;
+            })
+          }
+        />
 
         {/* Category badge */}
         <View style={[styles.badge, styles[`badge_${item.category}`]]}>
@@ -232,6 +261,8 @@ export default function DesignersScreen() {
 
   // Extra top padding for Android modals (iOS SafeAreaView handles notches)
   const androidPadTop = Platform.OS === 'android' ? 24 : 0;
+
+  const previewSrc = getSrc(preview?.img, `modal-${preview?.entryNo ?? 'x'}`);
 
   return (
     <>
@@ -394,7 +425,12 @@ export default function DesignersScreen() {
             </Pressable>
           </View>
 
-          <Image source={imgSource(preview?.img)} style={styles.modalImg} />
+          <ExpoImage
+            source={preview ? previewSrc : PLACEHOLDER_URI}
+            style={styles.modalImg}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
 
           <View style={{ padding: 16 }}>
             <Text style={[styles.modalLine, { color: C.text }]}>
@@ -477,7 +513,7 @@ const styles = StyleSheet.create({
   cardFull: { width: '100%' },
   cardHalf: { width: '48%' },
 
-  image: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10, resizeMode: 'cover' },
+  image: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
 
   // Category badge (top-left)
   badge: { position: 'absolute', top: 10, left: 10, borderRadius: 6, paddingVertical: 4, paddingHorizontal: 8 },
@@ -509,6 +545,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: { flex: 1, fontSize: 18, fontWeight: '900', marginRight: 8 },
   modalCloseBtn: { padding: 6, borderRadius: 8, borderWidth: 1 },
-  modalImg: { width: '100%', height: 360, resizeMode: 'cover' },
+  modalImg: { width: '100%', height: 360 },
   modalLine: { marginTop: 6 },
 });
