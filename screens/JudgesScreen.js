@@ -65,7 +65,7 @@ export default function JudgesScreen() {
               navigation.navigate('JudgeDetail', {
                 id: item.id,
                 name: item.name,
-                img: item.img,
+                // no img param; we’ll resolve from id in the detail screen
               })
             }
           >

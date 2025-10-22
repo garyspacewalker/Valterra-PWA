@@ -1,6 +1,7 @@
 // screens/JudgeDetailScreen.js
 import React, { useMemo } from 'react';
 import { ScrollView, View, Text, Image, StyleSheet, Pressable } from 'react-native';
+import { Image as RNImage } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Logo from '../components/Logo';
@@ -8,6 +9,20 @@ import { palette } from '../theme';
 import { useSettings } from '../context/SettingsContext';
 
 const PLACEHOLDER = require('../assets/icon.png');
+
+// Map id -> local asset (so we don't need to pass the image via params)
+const JUDGE_IMAGES = {
+  'oliver-green':       require('../assets/judges/oliver-green-5.jpg'),
+  'dave-newman':        require('../assets/judges/dave-newman-6.jpg'),
+  'chris-van-rensburg': require('../assets/judges/chris-v-r-2.jpg'),
+  'lorna-lloyd':        require('../assets/judges/lorna-lloyd-6.jpg'),
+  'geraldine-fenn':     require('../assets/judges/geraldine-fenn-6.jpg'),
+  'joel-graham':        require('../assets/judges/joel-graham-5.jpg'),
+  'bheki-ngema':        require('../assets/judges/bheki-ngema-7.jpg'),
+  'lungile-xhwantini':  require('../assets/judges/lungilexhwantini-4.jpg'),
+  'tai-wong':           require('../assets/judges/tai-wong-3.jpg'),
+  'josh-helmich':       require('../assets/judges/josh-helmich-5.jpg'),
+};
 
 const BIO_MAP = {
   'oliver-green': [
@@ -98,16 +113,24 @@ const BIO_MAP = {
 };
 
 function toParagraphs(bioEntry) {
-  if (Array.isArray(bioEntry)) {
-    return bioEntry.map(p => (p || '').trim()).filter(Boolean);
-  }
+  if (Array.isArray(bioEntry)) return bioEntry.map(p => (p || '').trim()).filter(Boolean);
   if (typeof bioEntry === 'string') {
-    return bioEntry
-      .split(/\r?\n\s*\r?\n/)
-      .map(p => p.trim())
-      .filter(Boolean);
+    return bioEntry.split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean);
   }
   return [];
+}
+
+// Cross-platform image normalizer (works for require(), uri string, ESM default)
+function imgSource(imgLike) {
+  if (!imgLike) return PLACEHOLDER;
+  try {
+    const resolved = RNImage.resolveAssetSource(imgLike);
+    if (resolved?.uri) return resolved;      // { uri, width?, height? }
+  } catch {}
+  if (typeof imgLike === 'string') return { uri: imgLike };
+  if (typeof imgLike === 'number') return imgLike;
+  if (typeof imgLike === 'object' && imgLike?.default) return { uri: imgLike.default };
+  return PLACEHOLDER;
 }
 
 export default function JudgeDetailScreen() {
@@ -126,7 +149,9 @@ export default function JudgeDetailScreen() {
     border: isDark ? '#243244' : '#e5e7eb',
   };
 
-  const source = typeof img === 'number' ? img : PLACEHOLDER;
+  // Prefer param image if present, else lookup by id; then normalize
+  const heroSource = useMemo(() => imgSource(img ?? JUDGE_IMAGES[id] ?? PLACEHOLDER), [img, id]);
+
   const paragraphs = useMemo(() => toParagraphs(BIO_MAP[id]), [id]);
 
   return (
@@ -150,7 +175,7 @@ export default function JudgeDetailScreen() {
           </Pressable>
         </View>
 
-        <Image source={source} style={styles.hero} />
+        <Image source={heroSource} style={styles.hero} />
 
         <View style={styles.section}>
           <Text
